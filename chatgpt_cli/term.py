@@ -15,13 +15,13 @@ from prompt_toolkit.styles import Style
 from chatgpt_cli import config
 
 
-CHAT_BANNER_LOGO = fr"""\
+CHAT_BANNER_LOGO = fr"""
    ________          __  __________  ______
   / ____/ /_  ____ _/ /_/ ____/ __ \/_  __/
  / /   / __ \/ __ `/ __/ / __/ /_/ / / /   
 / /___/ / / / /_/ / /_/ /_/ / ____/ / /    
 \____/_/ /_/\__,_/\__/\____/_/     /_/     Version {config.VERSION}
-"""
+""".lstrip("\n")
 CHAT_BANNER_INTRO = """\
 Welcome to ChatGPT-CLI, the command-line tool for ChatGPT!
 Type '/help' to see a list of available commands.
