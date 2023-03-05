@@ -1,0 +1,7 @@
+[MAIN]
+disable=
+    missing-docstring,
+    too-few-public-methods,
+    invalid-name,
+    global-variable-not-assigned,
+    global-statement,
