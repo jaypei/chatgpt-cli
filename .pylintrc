@@ -5,3 +5,4 @@ disable=
     invalid-name,
     global-variable-not-assigned,
     global-statement,
+    raise-missing-from,

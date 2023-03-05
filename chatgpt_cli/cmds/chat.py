@@ -11,6 +11,7 @@ from rich.markdown import Markdown
 from chatgpt_cli import config
 from chatgpt_cli import chatapi
 from chatgpt_cli import term
+from chatgpt_cli.error import CommandError, CommandExit
 
 
 def get_question():
@@ -34,13 +35,16 @@ def ask_openai(question):
         message=question,
         message_type=chatapi.ChatMessageType.USER,
     ))
-    # example without a system message
-    response = openai.ChatCompletion.create(
-        model=config.get_config().get('DEFAULT', 'CHATGPT_MODEL'),
-        messages=current_session.generate_query_messages(),
-        temperature=0,
-        stream=True,
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model=config.get_config().get('DEFAULT', 'CHATGPT_MODEL'),
+            messages=current_session.generate_query_messages(),
+            temperature=0,
+            stream=True,
+        )
+    except openai.error.RateLimitError as e:
+        term.console.print(f"[bold red]Rate limit exceeded: {e}[/bold red]")
+        raise CommandError("Rate limit exceeded", 2)
 
     output = []
     with Live(console=term.console) as live:
@@ -73,7 +77,9 @@ def run_chat_loop():
                         term.console.print(message.to_message_json())
                     continue
                 if question in ("/exit", "/quit"):
-                    raise EOFError
+                    raise CommandExit()
                 ask_openai(question)
+        except EOFError:
+            raise CommandExit()
         except KeyboardInterrupt:
             term.console.print("If you want to exit, please press <Ctrl+D>.")
