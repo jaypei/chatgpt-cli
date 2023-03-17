@@ -6,3 +6,5 @@ disable=
     global-variable-not-assigned,
     global-statement,
     raise-missing-from,
+    bare-except,
+    cyclic-import,

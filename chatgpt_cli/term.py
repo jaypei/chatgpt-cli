@@ -15,20 +15,6 @@ from prompt_toolkit.styles import Style
 from chatgpt_cli import config
 
 
-CHAT_BANNER_LOGO = fr"""
-   ________          __  __________  ______
-  / ____/ /_  ____ _/ /_/ ____/ __ \/_  __/
- / /   / __ \/ __ `/ __/ / __/ /_/ / / /   
-/ /___/ / / / /_/ / /_/ /_/ / ____/ / /    
-\____/_/ /_/\__,_/\__/\____/_/     /_/     Version {config.VERSION}
-""".lstrip("\n")
-CHAT_BANNER_INTRO = """\
-Welcome to ChatGPT-CLI, the command-line tool for ChatGPT!
-Type '/help' to see a list of available commands.
-Type '/exit' or <Ctrl-D> to exit the program.
-"""
-
-
 # Reference: https://rich.readthedocs.io/en/stable/appendix/colors.html#appendix-colors
 prompt_style = Style.from_dict({
     # default text
@@ -53,12 +39,6 @@ def init():
     prompt = PromptSession(history=FileHistory(prompt_hist_file), style=prompt_style)
     prompt_no_hist = PromptSession(style=prompt_style)
     console = Console()
-
-
-def print_chat_banner():
-    global console
-    console.print(CHAT_BANNER_LOGO, style="bold", highlight=False)
-    console.print(CHAT_BANNER_INTRO)
 
 
 def get_emoji(name):

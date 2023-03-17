@@ -4,14 +4,32 @@
 #
 
 
-import openai
 from rich.live import Live
 from rich.markdown import Markdown
 
-from chatgpt_cli import config
 from chatgpt_cli import chatapi
 from chatgpt_cli import term
-from chatgpt_cli.error import CommandError, CommandExit
+from chatgpt_cli.error import CommandExit
+from chatgpt_cli import config
+
+
+CHAT_BANNER_LOGO = fr"""
+   ________          __  __________  ______
+  / ____/ /_  ____ _/ /_/ ____/ __ \/_  __/
+ / /   / __ \/ __ `/ __/ / __/ /_/ / / /   
+/ /___/ / / / /_/ / /_/ /_/ / ____/ / /    
+\____/_/ /_/\__,_/\__/\____/_/     /_/     Version {config.VERSION}
+""".lstrip("\n")
+CHAT_BANNER_INTRO = """\
+Welcome to ChatGPT-CLI, the command-line tool for ChatGPT!
+Type '/help' to see a list of available commands.
+Type '/exit' or <Ctrl-D> to exit the program.
+"""
+
+
+def print_chat_banner(version):
+    term.console.print(CHAT_BANNER_LOGO.format(version=version), style="bold", highlight=False)
+    term.console.print(CHAT_BANNER_INTRO)
 
 
 def get_question():
@@ -29,22 +47,14 @@ def get_question():
 
 
 def ask_openai(question):
-    current_session = chatapi.get_session_manager().current_session
+    session_mgr = chatapi.get_session_manager()
+    current_session = session_mgr.current_session
 
     current_session.add_message(chatapi.ChatMessage(
         message=question,
         message_type=chatapi.ChatMessageType.USER,
     ))
-    try:
-        response = openai.ChatCompletion.create(
-            model=config.get_config().get('DEFAULT', 'CHATGPT_MODEL'),
-            messages=current_session.generate_query_messages(),
-            temperature=0,
-            stream=True,
-        )
-    except openai.error.RateLimitError as e:
-        term.console.print(f"[bold red]Rate limit exceeded: {e}[/bold red]")
-        raise CommandError("Rate limit exceeded", 2)
+    response = session_mgr.new_chat_completion(True)
 
     output = []
     with Live(console=term.console) as live:

@@ -11,7 +11,8 @@ from typing import List, Dict
 import attrs
 import openai
 
-from chatgpt_cli import config
+from chatgpt_cli import config, term
+from chatgpt_cli.error import CommandError
 
 
 # define a enum type for ChatMessageType
@@ -108,6 +109,19 @@ class ChatSessionManager:
         if auto_switch:
             self.switch(session_name)
         return new_session
+
+    def new_chat_completion(self, stream: bool) -> openai.ChatCompletion:
+        try:
+            response = openai.ChatCompletion.create(
+                model=config.get_config().get('DEFAULT', 'CHATGPT_MODEL'),
+                messages=self.current_session.generate_query_messages(),
+                temperature=0,
+                stream=stream,
+            )
+            return response
+        except openai.error.RateLimitError as e:
+            term.console.print(f"[bold red]Rate limit exceeded: {e}[/bold red]")
+            raise CommandError("Rate limit exceeded", 2)
 
 
 _session_manager : ChatSessionManager = None
