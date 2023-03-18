@@ -14,7 +14,7 @@ from chatgpt_cli import term
 from chatgpt_cli import chatapi
 
 
-_CONFIG : configparser.ConfigParser = None
+_CONFIG : configparser.ConfigParser
 _CONFIG_FILE_NAME = 'config.toml'
 VERSION = pkg_resources.get_distribution("chatgpt_cli").version
 
@@ -76,8 +76,6 @@ def create_config():
 
 def init():
     global _CONFIG
-    if _CONFIG is not None:
-        return
     _CONFIG = configparser.ConfigParser()
     init_opts()
     create_config()

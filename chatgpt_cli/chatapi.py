@@ -10,6 +10,8 @@ from typing import List, Dict
 
 import attrs
 import openai
+from rich.live import Live
+from rich.markdown import Markdown
 
 from chatgpt_cli import config, term
 from chatgpt_cli.error import CommandError
@@ -87,8 +89,8 @@ class ChatSession:
 class ChatSessionManager:
 
     def __init__(self):
-        self.sessions : Dict[ChatSession] = {}
-        self.current_session : ChatSession = None
+        self.sessions : Dict[str, ChatSession] = {}
+        self.current_session : ChatSession
 
     def get_session(self, session_name: str) -> ChatSession:
         if session_name not in self.sessions:
@@ -97,6 +99,7 @@ class ChatSessionManager:
 
     def switch(self, session_name: str) -> ChatSession:
         self.current_session = self.get_session(session_name)
+        return self.current_session
 
     def rename(self, old_name: str, new_name: str):
         if old_name in self.sessions:
@@ -110,7 +113,7 @@ class ChatSessionManager:
             self.switch(session_name)
         return new_session
 
-    def new_chat_completion(self, stream: bool) -> openai.ChatCompletion:
+    def _new_chat_completion(self, stream: bool) -> openai.ChatCompletion:
         try:
             response = openai.ChatCompletion.create(
                 model=config.get_config().get('DEFAULT', 'CHATGPT_MODEL'),
@@ -123,8 +126,50 @@ class ChatSessionManager:
             term.console.print(f"[bold red]Rate limit exceeded: {e}[/bold red]")
             raise CommandError("Rate limit exceeded", 2)
 
+    def _single_output(self, console: term.Console, response: openai.ChatCompletion) -> str:
+        output = []
+        for chunk in response:
+            delta_obj = chunk['choices'][0]['delta']
+            content = delta_obj.get("content")
+            if content is None:
+                continue
+            output.append(content)
+        message = "".join(output)
+        console.print(message)
+        return message
 
-_session_manager : ChatSessionManager = None
+    def _live_output(self, console: term.Console, response: openai.ChatCompletion) -> str:
+        output = []
+        with Live(console=console) as live:
+            for chunk in response:
+                delta_obj = chunk['choices'][0]['delta']
+                content = delta_obj.get("content")
+                if content is None:
+                    continue
+                output.append(content)
+                md = Markdown("".join(output))
+                live.update(md, refresh=True)
+        return "".join(output)
+
+    def ask(self, question: str, stream: bool, console: term.Console) -> str:
+        self.current_session.add_message(ChatMessage(
+            message=question,
+            message_type=ChatMessageType.USER,
+        ))
+        response = self._new_chat_completion(stream=stream)
+        answer = ""
+        if not stream:
+            answer = self._single_output(console, response)
+        else:
+            answer = self._live_output(console, response)
+        self.current_session.add_message(ChatMessage(
+            message=answer,
+            message_type=ChatMessageType.ASSISTANT,
+        ))
+        return answer
+
+
+_session_manager : ChatSessionManager
 
 
 def get_session_manager() -> ChatSessionManager:

@@ -4,33 +4,55 @@
 #
 
 
-import openai
-from rich.live import Live
-from rich.markdown import Markdown
+import sys
+import typing as t
 
-from chatgpt_cli import config
+import click
+
 from chatgpt_cli import chatapi
 from chatgpt_cli import term
-from chatgpt_cli.error import CommandError
+from chatgpt_cli import error
+from chatgpt_cli.cmds.base import BaseCmd
 
 
-def run_ask_cmd(question, stream_mode=True):
-    session_mgr = chatapi.get_session_manager()
-    current_session = session_mgr.current_session
-    current_session.add_message(chatapi.ChatMessage(
-        message=question,
-        message_type=chatapi.ChatMessageType.USER,
-    ))
-    response = session_mgr.new_chat_completion(stream_mode)
+class AskCommand(BaseCmd):
 
-    output = []
-    with Live(console=term.console) as live:
-        for chunk in response:
-            delta_obj = chunk['choices'][0]['delta']
-            content = delta_obj.get("content")
-            if content is None:
-                continue
-            output.append(content)
-            md = Markdown("".join(output))
-            live.update(md, refresh=True)
-    term.console.print("\n")
+    name = "ask"
+    help = "One shot chat."
+    opts = [
+        click.Option(
+            ["--no-stream"],
+            is_flag=True,
+            help="Disable streaming mode.",
+        ),
+        click.Argument(
+            ["question"],
+            nargs=-1,
+        ),
+    ]
+
+    def run(self, **kwargs) -> t.Any:
+        no_stream = kwargs.get("no_stream", False)
+        question = kwargs.get("question", [])
+        stream_mode = not no_stream
+        question = " ".join(question)
+        if question.strip() == "":
+            current_context = click.get_current_context()
+            click.echo(self.get_help(current_context))
+            sys.exit(1)
+        try:
+            self.run_ask_cmd(" ".join(question), stream_mode=stream_mode)
+        except error.CommandError as e:
+            term.console.print(f"[bold red]Error: {e.message}[/bold red]")
+            sys.exit(e.exit_code)
+        # control + c
+        except KeyboardInterrupt:
+            term.console.print("\nBye!")
+            sys.exit(2)
+        except:
+            term.console.print_exception()
+
+    def run_ask_cmd(self, question, stream_mode=True):
+        session_mgr = chatapi.get_session_manager()
+        session_mgr.ask(question, stream=stream_mode, console=term.console)
+        term.console.print("\n")

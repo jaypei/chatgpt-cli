@@ -26,14 +26,13 @@ prompt_style = Style.from_dict({
 })
 
 
-console: Console = None
-prompt: PromptSession = None
-prompt_no_hist: PromptSession = None
+console: Console
+prompt: PromptSession
+prompt_no_hist: PromptSession
 
 
 def init():
     global console, prompt, prompt_no_hist
-    assert(console is None and prompt is None and prompt_no_hist is None)
     config_dir = config.get_config_dir(try_create=True)
     prompt_hist_file = os.path.join(config_dir, "cli_history")
     prompt = PromptSession(history=FileHistory(prompt_hist_file), style=prompt_style)

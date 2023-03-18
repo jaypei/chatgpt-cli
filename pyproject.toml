@@ -18,10 +18,16 @@ license = {text = "MIT"}
 
 
 [tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "tox-pdm>=0.6.1",
+    "pytest>=7.2.2",
+    "pylint>=2.17.0",
+]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-chatgpt-cli = "chatgpt_cli.main:cli"
+chatgpt-cli = "chatgpt_cli.main:main"
