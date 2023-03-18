@@ -2,6 +2,8 @@
 
 A ChatGPT CLI tool based on the OpenAI API, for hardcore terminal users.
 
+[![check](https://github.com/jaypei/chatgpt-cli/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/jaypei/chatgpt-cli/actions/workflows/check.yml)
+
 ## Demo
 
 [![demo](https://asciinema.org/a/ndVOheamhszmfa6cJZ6ktq0SC.svg)](https://asciinema.org/a/ndVOheamhszmfa6cJZ6ktq0SC?autoplay=1)
