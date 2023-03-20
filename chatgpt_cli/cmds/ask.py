@@ -41,7 +41,7 @@ class AskCommand(BaseCmd):
             click.echo(self.get_help(current_context))
             sys.exit(1)
         try:
-            self.run_ask_cmd(" ".join(question), stream_mode=stream_mode)
+            self.run_ask_cmd(question, stream_mode=stream_mode)
         except error.CommandError as e:
             term.console.print(f"[bold red]Error: {e.message}[/bold red]")
             sys.exit(e.exit_code)
