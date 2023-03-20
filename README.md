@@ -6,7 +6,7 @@ A ChatGPT CLI tool based on the OpenAI API, for hardcore terminal users.
 
 ## Demo
 
-[![demo](https://asciinema.org/a/ndVOheamhszmfa6cJZ6ktq0SC.svg)](https://asciinema.org/a/ndVOheamhszmfa6cJZ6ktq0SC?autoplay=1)
+[![demo](https://asciinema.org/a/568562.svg)](https://asciinema.org/a/568562?autoplay=1)
 
 ## Usage
 
@@ -16,12 +16,11 @@ You need to first open [HERE](https://beta.openai.com/account/api-keys) to get a
 # Install
 pip install git+https://github.com/jaypei/chatgpt-cli
 
-# Start a chat session
+# Ask directly without keeping any context.
+chatgpt-cli ask <question>
+
+# Start a chat session, so that we can have a conversation with context.
 chatgpt-cli chat
 
-# or make an alias
-alias chat="chatgpt-cli chat"
-chat
-
-# have fun
+# Have fun!
 ```
