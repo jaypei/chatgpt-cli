@@ -6,7 +6,7 @@
 
 import datetime
 import enum
-from typing import List, Dict
+import typing as t
 
 import attrs
 import openai
@@ -36,16 +36,6 @@ def system_content_by_act_mode(act_mode: ActMode) -> str:
         return "You are an English translator, spelling corrector and improver."
     raise ValueError("Invalid act_mode")
 
-# pylint: disable=line-too-long
-messages = [
-    {"role": "system", "content": "You are a helpful, pattern-following assistant that translates corporate jargon into plain English."},
-    {"role": "system", "name":"example_user", "content": "New synergies will help drive top-line growth."},
-    {"role": "system", "name": "example_assistant", "content": "Things working well together will increase revenue."},
-    {"role": "system", "name":"example_user", "content": "Let's circle back when we have more bandwidth to touch base on opportunities for increased leverage."},
-    {"role": "system", "name": "example_assistant", "content": "Let's talk later when we're less busy about how to do better."},
-    {"role": "user", "content": "This late pivot means we don't have time to boil the ocean for the client deliverable."},
-]
-
 
 @attrs.define
 class ChatMessage:
@@ -62,19 +52,19 @@ class ChatMessage:
 
 class ChatSession:
 
-    histories : List[ChatMessage] = attrs.field(factory=list)
+    histories : t.List[ChatMessage] = attrs.field(factory=list)
 
     def __init__(self, session_name: str, act_mode: ActMode):
         self.session_name : str = session_name
         self.act_mode : ActMode = act_mode
-        self.histories : List[ChatMessage] = []
+        self.histories : t.List[ChatMessage] = []
         self.conversation_count : int = 0
         self.histories.append(ChatMessage(
             message=system_content_by_act_mode(self.act_mode),
             message_type=ChatMessageType.SYSTEM,
         ))
 
-    def generate_query_messages(self) -> list:
+    def generate_query_messages(self) -> t.List:
         query_messages = []
         for message in self.histories:
             query_messages.append(message.to_message_json())
@@ -89,7 +79,7 @@ class ChatSession:
 class ChatSessionManager:
 
     def __init__(self):
-        self.sessions : Dict[str, ChatSession] = {}
+        self.sessions : t.Dict[str, ChatSession] = {}
         self.current_session : ChatSession
 
     def get_session(self, session_name: str) -> ChatSession:
@@ -127,15 +117,8 @@ class ChatSessionManager:
             raise CommandError("Rate limit exceeded", 2)
 
     def _single_output(self, console: term.Console, response: openai.ChatCompletion) -> str:
-        output = []
-        for chunk in response:
-            delta_obj = chunk['choices'][0]['delta']
-            content = delta_obj.get("content")
-            if content is None:
-                continue
-            output.append(content)
-        message = "".join(output)
-        console.print(message)
+        message = response['choices'][0]['message']["content"]
+        console.print(Markdown(message))
         return message
 
     def _live_output(self, console: term.Console, response: openai.ChatCompletion) -> str:
@@ -156,8 +139,11 @@ class ChatSessionManager:
             message=question,
             message_type=ChatMessageType.USER,
         ))
-        response = self._new_chat_completion(stream=stream)
-        answer = ""
+        response : openai.ChatCompletion
+        with term.make_progress_bar(console) as progress:
+            progress.add_task(":thinking_face: [green]Thinking ...", total=None)
+            response = self._new_chat_completion(stream=stream)
+            answer = ""
         if not stream:
             answer = self._single_output(console, response)
         else:

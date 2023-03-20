@@ -67,7 +67,7 @@ class ChatCommand(BaseCmd):
 
     def ask_openai(self, question):
         session_mgr = chatapi.get_session_manager()
-        session_mgr.ask(question, stream=False, console=term.console)
+        session_mgr.ask(question, stream=True, console=term.console)
         term.console.print("\n")
 
     def run_chat_loop(self):
