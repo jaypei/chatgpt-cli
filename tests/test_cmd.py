@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright 2023, JayPei <jaypei97159@gmail.com>
+#
+
+
 import unittest
 from unittest.mock import Mock
 from chatgpt_cli.cmds.base import BaseCmd, load_cmd

@@ -23,5 +23,5 @@ def main():
     chatapi.init()
     cli.add_command(load_cmd("ChatCommand"))
     cli.add_command(load_cmd("AskCommand"))
-    # cli.add_command(load_cmd("ConfigCommand"))
+    cli.add_command(load_cmd("ConfigCommand"))
     cli()

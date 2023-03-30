@@ -1,6 +1,6 @@
 [project]
 name = "chatgpt-cli"
-version = "0.2.2"
+version = "0.3.0"
 description = "A ChatGPT CLI tool based on the OpenAI API, for hardcore terminal users."
 authors = [
     {name = "jaypei", email = "jaypei97159@gmail.com"},

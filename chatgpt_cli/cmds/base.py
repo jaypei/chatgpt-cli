@@ -9,7 +9,7 @@ import typing as t
 import importlib
 from gettext import gettext as _
 
-from click import Command, Context, Parameter
+from click import Command, Group, Context, Parameter
 
 from chatgpt_cli import term
 
@@ -36,6 +36,23 @@ class BaseCmd(Command):
 
     def run(self, **kwargs) -> t.Any:
         raise NotImplementedError
+
+
+class BaseMultiCmd(Group):
+
+    name: str = "base_multi_cmd"
+    help: str = "Base multi command."
+    opts: t.Optional[t.List[Parameter]] = None
+    subcommands: t.Optional[t.List["BaseCmd"]] = None
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("name", self.name)
+        kwargs.setdefault("help", self.help)
+        super().__init__(*args, **kwargs)
+        self.params.extend(self.opts or [])
+        if self.subcommands:
+            for subcmd in self.subcommands:
+                self.add_command(subcmd)
 
 
 def load_cmd(cmd_name: str) -> BaseCmd:

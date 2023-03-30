@@ -24,19 +24,6 @@ class ChatMessageType(enum.Enum):
     ASSISTANT = "assistant"
 
 
-class ActMode(enum.Enum):
-    ASSISTANT = "Assistant"
-    TRANSLATOR = "Translator"
-
-
-def system_content_by_act_mode(act_mode: ActMode) -> str:
-    if act_mode == ActMode.ASSISTANT:
-        return "You are a friendly and helpful teaching assistant."
-    if act_mode == ActMode.TRANSLATOR:
-        return "You are an English translator, spelling corrector and improver."
-    raise ValueError("Invalid act_mode")
-
-
 @attrs.define
 class ChatMessage:
     message : str
@@ -54,23 +41,34 @@ class ChatSession:
 
     histories : t.List[ChatMessage] = attrs.field(factory=list)
 
-    def __init__(self, session_name: str, act_mode: ActMode):
+    def __init__(self, session_name: str, prompt: str):
         self.session_name : str = session_name
-        self.act_mode : ActMode = act_mode
+        self.prompt : str = prompt
         self.histories : t.List[ChatMessage] = []
         self.conversation_count : int = 0
-        self.histories.append(ChatMessage(
-            message=system_content_by_act_mode(self.act_mode),
-            message_type=ChatMessageType.SYSTEM,
-        ))
+        self.no_context : bool = not config.get_config().getboolean('CLI', 'default_enable_context')
+
+    def __str__(self):
+        return f"ChatSession({self.session_name}, {self.prompt}, {self.no_context})"
 
     def generate_query_messages(self) -> t.List:
         query_messages = []
+        if self.no_context:
+            # reversed query for the first user message
+            for message in reversed(self.histories):
+                if message.message_type == ChatMessageType.USER:
+                    query_messages.append(message.to_message_json())
+                    break
+            return query_messages
         for message in self.histories:
             query_messages.append(message.to_message_json())
         return query_messages
 
     def add_message(self, message: ChatMessage):
+        if self.prompt and message.message_type == ChatMessageType.USER:
+            prompt_message = config.get_prompt_message(self.prompt)
+            if prompt_message:
+                message.message = f"{prompt_message}\n\n{message.message}"
         self.histories.append(message)
         if message.message_type == ChatMessageType.USER:
             self.conversation_count += 1
@@ -84,7 +82,8 @@ class ChatSessionManager:
 
     def get_session(self, session_name: str) -> ChatSession:
         if session_name not in self.sessions:
-            self.sessions[session_name] = ChatSession(session_name, act_mode=ActMode.ASSISTANT)
+            self.sessions[session_name] = ChatSession(
+                session_name, prompt=config.get_config()['CLI']['default_prompt'])
         return self.sessions[session_name]
 
     def switch(self, session_name: str) -> ChatSession:
@@ -96,8 +95,13 @@ class ChatSessionManager:
             self.sessions[new_name] = self.sessions[old_name]
             del self.sessions[old_name]
 
-    def create(self, session_name: str, auto_switch: bool=True) -> ChatSession:
-        new_session = ChatSession(session_name, act_mode=ActMode.ASSISTANT)
+    def create(
+        self, session_name: str, auto_switch: bool=True,
+        prompt: t.Optional[str]=None
+    ) -> ChatSession:
+        if prompt is None:
+            prompt = config.get_config()['CLI']['default_prompt']
+        new_session = ChatSession(session_name, prompt)
         self.sessions[session_name] = new_session
         if auto_switch:
             self.switch(session_name)
@@ -106,9 +110,13 @@ class ChatSessionManager:
     def _new_chat_completion(self, stream: bool) -> openai.ChatCompletion:
         try:
             response = openai.ChatCompletion.create(
-                model=config.get_config().get('DEFAULT', 'CHATGPT_MODEL'),
+                model=config.get_config().get('API', 'CHATGPT_MODEL'),
                 messages=self.current_session.generate_query_messages(),
-                temperature=0,
+                temperature=int(config.get_config().get('API', 'TEMPERATURE')),
+                top_p=1,
+                n=1,
+                presence_penalty=0,
+                frequency_penalty=0,
                 stream=stream,
             )
             return response
@@ -165,7 +173,7 @@ def get_session_manager() -> ChatSessionManager:
 
 def init():
     global _session_manager
-    openai.api_key = config.get_config().get('DEFAULT', 'OPENAI_API_KEY')
+    openai.api_key = config.get_config().get('API', 'OPENAI_API_KEY')
     _session_manager = ChatSessionManager()
     _session_manager.create('Chat01', auto_switch=True)
 

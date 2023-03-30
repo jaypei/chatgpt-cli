@@ -5,6 +5,10 @@
 
 
 import os
+import shlex
+import typing as t
+import tempfile
+import subprocess
 from datetime import timedelta
 
 from rich.console import Console
@@ -26,6 +30,7 @@ prompt_style = Style.from_dict({
     'session': '#5f5fff bold',
     'conversation_count': '#5fd700 bold',
     'prompt_sep': '#008700 bold',
+    'prompt_name': '#00cbcb bold',
 })
 
 
@@ -66,3 +71,18 @@ def make_progress_bar(client_console: Console) -> Progress:
         console=client_console,
         transient=True,
     )
+
+
+def split_command_line(cmdline: str) -> t.List[str]:
+    return shlex.split(cmdline)
+
+
+def multiline_input_with_editor(txt: str = "") -> str:
+    editor = os.environ.get("EDITOR", "vim")
+    with tempfile.NamedTemporaryFile(suffix='.tmp', delete=False) as tmp_file:
+        tmp_file.write(txt.encode('utf-8'))
+        tmp_file.flush()
+        subprocess.run([editor, tmp_file.name])
+        with open(tmp_file.name, 'r', encoding="utf-8") as inputFile:
+            edited_text = inputFile.read()
+        return edited_text

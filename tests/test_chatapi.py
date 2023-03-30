@@ -1,9 +1,14 @@
-import unittest
-import json
-from datetime import datetime
+# -*- coding: utf-8 -*-
+#
+# Copyright 2023, JayPei <jaypei97159@gmail.com>
+#
 
-from chatgpt_cli.chatapi import ChatMessage, ChatMessageType, ChatSession, ActMode
-from unittest.mock import Mock
+
+import unittest
+
+from chatgpt_cli.chatapi import ChatMessage, ChatMessageType, ChatSession
+from chatgpt_cli.config import init as init_config
+from chatgpt_cli.config import get_config, reload_prompt
 
 
 class TestChatMessage(unittest.TestCase):
@@ -25,26 +30,34 @@ class TestChatMessage(unittest.TestCase):
 
 
 class TestChatSession(unittest.TestCase):
+
+    def setUp(self):
+        init_config()
+        conf = get_config()
+        conf.set('CLI', 'default_prompt', 'assist')
+        conf.set('CLI', 'default_enable_context', 'True')
+        conf.set('PROMPT', 'assist', 'TEST ASSIST')
+        reload_prompt()
+
     def test_generate_query_messages(self):
-        chat_session = ChatSession("test_session", ActMode.ASSISTANT)
+        chat_session = ChatSession("test_session", "assist")
         chat_session.add_message(ChatMessage("test message", ChatMessageType.USER))
         chat_session.add_message(ChatMessage("system response", ChatMessageType.SYSTEM))
         chat_session.add_message(ChatMessage("test message 2", ChatMessageType.USER))
 
         expected_result = [
-            ChatMessage("You are a friendly and helpful teaching assistant.", ChatMessageType.SYSTEM).to_message_json(),
-            ChatMessage("test message", ChatMessageType.USER).to_message_json(),
+            ChatMessage("TEST ASSIST\n\ntest message", ChatMessageType.USER).to_message_json(),
             ChatMessage("system response", ChatMessageType.SYSTEM).to_message_json(),
-            ChatMessage("test message 2", ChatMessageType.USER).to_message_json()
+            ChatMessage("TEST ASSIST\n\ntest message 2", ChatMessageType.USER).to_message_json()
         ]
         self.assertEqual(chat_session.generate_query_messages(), expected_result)
 
     def test_add_message(self):
-        chat_session = ChatSession("test_session", ActMode.ASSISTANT)
+        chat_session = ChatSession("test_session", "assist")
         chat_session.add_message(ChatMessage("test message", ChatMessageType.SYSTEM))
         chat_session.add_message(ChatMessage("test message 2", ChatMessageType.USER))
 
-        self.assertEqual(len(chat_session.histories), 3)  # 3 messages including initial system message
-        self.assertEqual(chat_session.histories[1].message, "test message")
-        self.assertEqual(chat_session.histories[2].message, "test message 2")
-        self.assertEqual(chat_session.conversation_count, 1)  # one user message added
+        self.assertEqual(len(chat_session.histories), 2)
+        self.assertEqual(chat_session.histories[0].message, "test message")
+        self.assertEqual(chat_session.histories[1].message, "TEST ASSIST\n\ntest message 2")
+        self.assertEqual(chat_session.conversation_count, 1)
